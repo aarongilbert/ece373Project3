@@ -19,6 +19,7 @@ struct inst *IMem;
 int *reg;
 int *DMem;
 int pc;
+int *RAWflag		// = 1 if read is in progress at reg locaion
 int branchPending;
 int timer;
 int IFcount;
@@ -48,6 +49,11 @@ int main(void) {
 	DMem = malloc((2048/4)*sizeof(int));
 	IMem = malloc((2048/4)*sizeof(struct inst));
 	reg = malloc(32*sizeof(int));
+	RAWflag = malloc(32*sizeof(int));
+	IFIDLatch = {0, 0, 0, 0};
+	IDEXLatch = {0, 0, 0, 0};
+	EXMEMLatch = {0, 0, 0, 0};
+	MEMWBLatch = {0, 0, 0, 0};
 	reg[0] = 0;
 	branchPending = 0;
 	timer = 0;
@@ -102,70 +108,51 @@ void IF(){
 
 }
 void ID(){
-	static int cycleNumber = 0;
 	static struct inst in = out;
-	if(cycleNumber = 0){
-		struct inst in = IFIDLatch;
-		out = in;
-		switch ( op.in ) {
-		case 0:
-			break;
-		case 1:
-			a.out = *(reg + a.in);
-			b.out = *(reg + b.in);
-			c.out = *(reg + c.in);
-			IDcount++;
-			break;
-		case 2:
-			a.out = *(reg + a.in);
-			b.out = *(reg + b.in);
-			c.out = *(reg + c.in);
-			IDcount++;
-			break;
-		case 3:
-			a.out = *(reg + a.in);
-			b.out = *(reg + b.in);
-			c.out = *(reg + c.in);
-			IDcount++;
-			break;
-		case 4:
-			branchPending = 1; 
-			a.out = *(reg + a.in);
-			b.out = *(reg + b.in);
-			IDcount++;
-			break;
-		case 5:
-			a.out = *(reg + a.in);
-			b.out = *(reg + b.in);
-			IDcount++;
-			break;
-		case 6:
-			a.out = *(reg + a.in);
-			c.out = *(reg + c.in);
-			IDcount++;
-			break;
-
-		case 7:
-			a.out = *(reg + a.in);
-			c.out = *(reg + c.in);
-			IDcount++;
-			break;
-		default:
-			assert(1 != 1);
-			break;
+	struct inst in = IFIDLatch;
+	out = in;
+	switch ( op.in ) {
+	case 0:
+		break;
+	case 1:
+	case 2:
+	case 3:
+	case 4:
+		if(RAWflag[b.in]&&RAWflag[c.in]){
+			RAWflag[a.in] = 1;
+			b.out = reg[b.in];
+			c.out = reg[c.in];
+			if(IDEXLatch.out == 0){
+				IDcount++;
+				IDEXLatch = out;
+				IFIDLatch.op = 0;
+			}
 		}
-	}
-	else if(cycleNumber ==1){
-		if(IDEXLatch.out == 0){
-			IDcount++;
-			IDEXLatch = out;
-			IFIDLatch.op = 0;
-			cycleNumber--;
+		break;
+	case 5:
+		if(RAWflag[b.in]){
+			b.out = reg[b.in];
+			if(IDEXLatch.out == 0){
+				IDcount++;
+				IDEXLatch = out;
+				IFIDLatch.op = 0;
+			}
 		}
-	}
-	else{
-		IDcount++;
-		cycleNumber--;
+		break;
+	case 6:
+	case 7:
+		if(RAWflag[c.in]{
+			c.out = reg[c.in];
+			if(IDEXLatch.out == 0){
+				IDcount++;
+				IDEXLatch = out;
+				IFIDLatch.op = 0;
+			}
+		}
+		break;
+	default:
+		assert(1 != 1);
+		break;
 	}
 }
 void EX(){
@@ -197,6 +184,7 @@ void EX(){
 			if(a.in == b.in)
 				pc = pc + c.in;
 			cycleNumber = n;
+			branchPending = 0;
 			EXcount++;
 			break;
 		case 5:
@@ -268,46 +256,28 @@ void MEM(){
 	}
 }
 void WB(){
-	static int cycleNumber = 0;
-	static struct inst in = out;
-	if(cycleNumber = 0){
-		struct inst in = MEMWBLatch;
-		out = in;
-		switch ( op.in ) {
-		case 0:
-			break;
-		case 1:
-			*(reg + a.in) = b.in;
-			WBcount++;
-			break;
-		case 2:
-			*(reg + a.in) = b.in;
-			WBcount++;
-			break;
-		case 3:
-			*(reg + a.in) = b.in;
-			WBcount++;
-			break;
-		case 4:
-			break;
-		case 5:
-			*(reg + a.in) = b.in;
-			WBcount++;
-			break;
-		case 6:
-			*(reg + a.in) = b.in;
-			WBcount++;
-			break;
-		case 7:
-			break;
-		default:
-			assert(1 != 1);
-			break;
-		}
-	}
-	else{
+
+	struct inst in = MEMWBLatch;
+	switch ( op.in ) {
+	case 0:
+	case 5:
+	case 7:
+	op.in = 0;
+	break;
+	case 1:
+	case 2:		
+	case 3:
+	case 5:
+	case 6:
+		reg[a.in] = b.in;
+		RAWflag[a.in] =0;
+		op.in = 0;
 		WBcount++;
-		cycleNumber--;
+		break;		
+	default:
+		assert(1 != 1);
+		break;
 	}
 }
+
 }
