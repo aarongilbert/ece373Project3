@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <assert.h>
+#include "parser.h"
 
 struct inst
 {
@@ -40,8 +42,6 @@ void ID();
 void EX();
 void MEM();
 void WB();
-
-
 
 int main(void) {
 //initialization of memories and variables go here
@@ -98,12 +98,39 @@ int main(void) {
         printf("WB: %d \n", WBcount);
 
 }
-char *progScanner(){
-
+char *progScanner(char* fileName){
+	FILE *ifp;
+	traceEntry = malloc(1000*sizeof(char));
+	ifp = fopen(strcat("./", fileName) ,"r");
+	while (fgets(traceEntry, 1000, ifp) != NULL){
+		fprint("appended string: %s \n", traceEntry);
+		} 
+	fclose(ifp);
 }
+
 struct inst parser(){
-
+    //int arraySize = strlen(traceEntry)/6;
+	int i = 0;
+	char* token;
+	token= strtok(traceEntry, " ,$\n");
+	while((token != NULL)){
+		instructions[i].op = getInstNumber(token);
+		
+		token= strtok(NULL," ,\n");
+		instructions[i].a = getInstNumber(token);
+		
+		token= strtok(NULL," ,\n");
+		instructions[i].b = getInstNumber(token);
+		
+		token= strtok(NULL," ,\n");
+		instructions[i].c = getInstNumber(token);
+		
+		token= strtok(NULL," ,\n");
+		
+		i++;
+	}
 }
+
 void IF(){
 	if((IFIDLatch.op == 0)&&(branchPending ==0)){
 		IFIDLatch = IMem(PC/4);
