@@ -74,7 +74,7 @@ int main(void) {
         assert(m>0);
         assert(n>0);
         assert((mode==1)||(mode==2));
-        while(!((halt == 0)&&(op.IFIDLatch == 0)&&(op.IDEXLatch == 0)&&(op.EXMEMLatch == 0)&&(op.MEMWBLatch == 0))){
+        while(!((halt == 0)&&(IFIDLatch.op == 0)&&(IDEXLatch.op == 0)&&(EXMEMLatch.op == 0)&&(MEMWBLatch.op == 0))){
                 WB();
                 MEM();
                 EX();
@@ -105,12 +105,12 @@ struct inst parser(){
 
 }
 void IF(){
-	if((op.IFIDLatch == 0)&&(branchPending ==0)){
+	if((IFIDLatch.op == 0)&&(branchPending ==0)){
 		IFIDLatch = IMem(PC/4);
-		if(op.IFIDLatch == 4){
+		if(IFIDLatch.op == 4){
 			branchPending = 1;
 		}
-		if(op.IFIDLatch == 8){
+		if(IFIDLatch.op == 8){
 			halt = 1;
 		PC = PC+4;
 		IFcount++;
@@ -120,16 +120,16 @@ void ID(){
         static struct inst in = out;
         struct inst in = IFIDLatch;
         out = in;
-        switch ( op.in ) {
+        switch ( in.op ) {
         case 0:
                 break;
         case 1:
         case 2:
         case 3:
-			    if(RAWflag[b.in]&&RAWflag[c.in]){
-                        RAWflag[a.in] = 1;
-                        b.out = reg[b.in];
-                        c.out = reg[c.in];
+			    if(RAWflag[in.b]&&RAWflag[in.c]){
+                        RAWflag[in.a] = 1;
+                        out.b = reg[in.b];
+                        out.c = reg[in.c];
                         if(IDEXLatch.out == 0){
                                 IDcount++;
                                 IDEXLatch = out;
@@ -138,10 +138,10 @@ void ID(){
                 }
                 break;
         case 4:
-                if(RAWflag[a.in]&&RAWflag[c.in]){
+                if(RAWflag[in.a]&&RAWflag[in.c]){
                         branchPending = 1; 
-                        a.out = reg[a.in]; 
-						c.out = reg[c.in];
+                        out.a = reg[in.a]; 
+						out.c = reg[in.c];
                         if(IDEXLatch.out == 0){
                                 IDcount++;
                                 IDEXLatch = out;
@@ -150,9 +150,9 @@ void ID(){
                 }
                 break;
         case 5:
-                if(RAWflag[b.in]){
-                        RAWflag[a.in] = 1;
-						b.out = reg[b.in];
+                if(RAWflag[in.b]){
+                        RAWflag[in.a] = 1;
+						out.b = reg[in.b];
                         if(IDEXLatch.out == 0){
                                 IDcount++;
                                 IDEXLatch = out;
@@ -161,9 +161,9 @@ void ID(){
                 }
                 break;
         case 6:
-		        if(RAWflag[c.in]{
-						RAWflag[a.in] = 1;
-                        c.out = reg[c.in];
+		        if(RAWflag[in.c]{
+						RAWflag[in.a] = 1;
+                        out.c = reg[in.c];
                         if(IDEXLatch.out == 0){
                                 IDcount++;
                                 IDEXLatch = out;
@@ -172,9 +172,9 @@ void ID(){
                 }
                 break;
         case 7:
-                if(RAWflag[c.in]&&RAWflag[a.in]{
-                        RAWflag[c.in] = 1; 
-						a.out = reg[a.in];
+                if(RAWflag[in.c]&&RAWflag[in.a]{
+                        RAWflag[in.c] = 1; 
+						out.a = reg[in.a];
                         if(IDEXLatch.out == 0){
                                 IDcount++;
                                 IDEXLatch = out;
@@ -193,45 +193,45 @@ void EX(){
         if(cycleNumber = 0){
                 struct inst in = IDEXLatch;
                 out = in;
-                switch ( op.in ) {
+                switch ( in.op ) {
                 case 0:
                         break;
                 case 1:
-                        b.out = b.in + c.in;
+                        out.b = in.b + in.c;
                         cycleNumber = c;
                         EXcount++;
                         break;
                 case 2:
-                        b.out = b.in - c.in;
+                        out.b = in.b - in.c;
                         cycleNumber = c;
                         EXcount++;
                         break;
                 case 3:
-                        b.out = b.in*c.in;
+                        out.b = in.b*in.c;
                         cycleNumber = m;
                         EXcount++;
                         break;
                 case 4:
 
-                        if(a.in == b.in)
-                                pc = pc + c.in;
+                        if(in.a == in.b)
+                                pc = pc + in.c;
                         cycleNumber = n;
                         branchPending = 0;
                         EXcount++;
                         break;
                 case 5:
-                        b.out = b.in + c.in;
+                        out.b = in.b + in.c;
                         cycleNumber = n;
                         EXcount++;
                         break;
                 case 6:
-                        b.out = b.in + c.in;
+                        out.b = in.b + in.a;
                         cycleNumber = n;
                         EXcount++;
                         break;
 
                 case 7:
-                        b.out = b.in + c.in;
+                        out.b = in.b + in.c;
                         cycleNumber = n;
                         EXcount++;
                         break;
@@ -258,7 +258,7 @@ void MEM(){
         struct inst in = EXMEMLatch
         static struct inst out = in;
         if(cycleNumber == 0){
-                switch ( op.in ) {
+                switch ( in.op ) {
                 case 1:
                 case 2:
                 case 3:
@@ -290,20 +290,20 @@ void MEM(){
 void WB(){                         
 
         struct inst in = MEMWBLatch;
-        switch ( op.in ) {
+        switch ( in.op ) {
         case 0:
         case 4:
 		case 7:
-				op.in = 0;
+				in.op = 0;
 				break;
         case 1:
         case 2:                
         case 3:
         case 5:
         case 6:
-                reg[a.in] = b.in;
-                RAWflag[a.in] = 0;
-                op.in = 0;
+                reg[in.a] = b.in;
+                RAWflag[in.a] = 0;
+                in.op = 0;
                 WBcount++;
                 break;                
         default:
