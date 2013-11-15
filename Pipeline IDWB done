@@ -19,7 +19,7 @@ struct inst *IMem;
 int *reg;
 int *DMem;
 int pc;
-int *RAWflag                // = 1 if read is in progress at reg locaion
+int *RAWflag                // = 1 if write is in progress at reg locaion
 int branchPending;
 int timer;
 int IFcount;
@@ -74,7 +74,7 @@ int main(void) {
         assert(m>0);
         assert(n>0);
         assert((mode==1)||(mode==2));
-        while(!halt){
+        while(!((halt == 0)&&(op.IFIDLatch == 0)&&(op.IDEXLatch == 0)&&(op.EXMEMLatch == 0)&&(op.MEMWBLatch == 0))){
                 WB();
                 MEM();
                 EX();
@@ -83,11 +83,11 @@ int main(void) {
                 reg[0] = 0;
                 timer++;
                 if(mode == 2){
-                        for(int q=0; q<32; q++){
-                                printf("register %d : %d \n", q, reg[q]])
-                        }
-            printf("pc: %d \n", pc);
-                        getchar();
+                    for(int q=0; q<32; q++){
+                        printf("register %d : %d \n", q, reg[q]])
+                    }
+					printf("pc: %d \n", pc);
+					getchar();
                 }
         }
         printf("Time: %d \n", timer);
@@ -105,7 +105,16 @@ struct inst parser(){
 
 }
 void IF(){
-
+	if((op.IFIDLatch == 0)&&(branchPending ==0)){
+		IFIDLatch = IMem(PC/4);
+		if(op.IFIDLatch == 4){
+			branchPending = 1;
+		}
+		if(op.IFIDLatch == 8){
+			halt = 1;
+		PC = PC+4;
+		IFcount++;
+	}
 }
 void ID(){
         static struct inst in = out;
