@@ -3,6 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include <assert.h>
+#include "parser.h"
 
 char* traceEntry;
 char stringArray[512][100];
